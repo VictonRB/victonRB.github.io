@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulado de Ortopedia e Traumatologia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#475569',
+                        success: '#22c55e',
+                        danger: '#ef4444',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .option-btn { transition: all 0.2s; }
+        .option-btn:disabled { cursor: not-allowed; opacity: 0.8; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 min-h-screen flex flex-col">
+
+    <header class="bg-white dark:bg-gray-800 shadow-md p-4 flex justify-between items-center sticky top-0 z-10">
+        <h1 class="text-xl md:text-2xl font-bold text-primary dark:text-blue-400">OrtoQuiz Pró</h1>
+        <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition" aria-label="Alternar Tema">
+            <svg id="moonIcon" class="w-6 h-6 text-gray-800 hidden dark:block dark:text-yellow-300" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+            <svg id="sunIcon" class="w-6 h-6 text-yellow-500 dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4.22 2.366a1 1 0 011.415 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zm-2.366 4.22a1 1 0 010 1.415l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 0zM10 16a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-4.22-2.366a1 1 0 01-1.415 0l-.707-.707a1 1 0 011.414-1.414l.707.707a1 1 0 010 1.415zM2 10a1 1 0 011-1h1a1 1 0 110 2H3a1 1 0 01-1-1zm2.366-4.22a1 1 0 010-1.415l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM10 5a5 5 0 100 10 5 5 0 000-10z" clip-rule="evenodd"></path></svg>
+        </button>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 md:p-8">
+        <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 md:p-8 w-full max-w-3xl fade-in" id="appContainer">
+            
+            <!-- Tela Inicial -->
+            <div id="homeScreen" class="text-center">
+                <h2 class="text-2xl md:text-3xl font-bold mb-4">Bem-vindo ao Simulado</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-8">Treine seus conhecimentos em Ortopedia e Traumatologia.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <button onclick="startQuiz('full')" class="bg-primary hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-1">
+                        Simulado Completo (Embaralhado)
+                    </button>
+                    <button onclick="showCategories()" class="bg-secondary hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg transition transform hover:-translate-y-1">
+                        Treinar por Área
+                    </button>
+                </div>
+            </div>
+
+            <!-- Tela de Categorias -->
+            <div id="categoryScreen" class="hidden text-center">
+                <h2 class="text-2xl font-bold mb-4">Escolha a Área</h2>
+                <div id="categoryList" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 text-left">
+                </div>
+                <button onclick="showHome()" class="text-primary hover:underline font-medium">← Voltar</button>
+            </div>
+
+            <!-- Tela do Quiz -->
+            <div id="quizScreen" class="hidden">
+                <div class="flex justify-between items-center mb-4 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                    <span id="questionCounter">Questão 1</span>
+                    <span id="currentCategory" class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-3 py-1 rounded-full text-xs text-center">Categoria</span>
+                </div>
+                <h3 id="questionText" class="text-lg md:text-xl font-medium mb-6 leading-relaxed">Texto da questão...</h3>
+                
+                <div id="optionsContainer" class="flex flex-col gap-3 mb-6"></div>
+
+                <div id="feedbackContainer" class="hidden bg-gray-50 dark:bg-gray-700 p-4 rounded-xl border-l-4 mb-6 fade-in">
+                    <p id="feedbackTitle" class="font-bold mb-2"></p>
+                    <p id="feedbackText" class="text-sm md:text-base"></p>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button id="btnConfirm" onclick="confirmAnswer()" class="bg-primary hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg transition opacity-50 cursor-not-allowed" disabled>Responder</button>
+                    <button id="btnNext" onclick="nextQuestion()" class="bg-secondary hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg transition hidden">Próxima</button>
+                </div>
+            </div>
+
+            <!-- Tela de Resultados -->
+            <div id="resultScreen" class="hidden text-center">
+                <h2 class="text-3xl font-bold mb-2">Simulado Concluído!</h2>
+                <div class="text-6xl font-black text-primary mb-6" id="finalScore">0%</div>
+                
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4 mb-6 text-left">
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-600">Desempenho por Área</h3>
+                    <div id="performanceBreakdown" class="flex flex-col gap-3"></div>
+                </div>
+
+                <div id="weakPointsContainer" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 text-left hidden">
+                    <h3 class="text-red-600 dark:text-red-400 font-bold mb-2 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        Pontos de Atenção (< 60%)
+                    </h3>
+                    <ul id="weakPointsList" class="list-disc pl-5 text-sm text-gray-700 dark:text-gray-300"></ul>
+                </div>
+
+                <button onclick="showHome()" class="bg-primary hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition">Voltar ao Início</button>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const categorias = [
+            "Fraturas de clavícula e escápula",
+            "Luxações glenoumerais",
+            "Fraturas de antebraço",
+            "Fraturas e luxações dos ossos do carpo",
+            "Fraturas de coluna vertebral",
+            "Fraturas e luxação do quadril",
+            "Fraturas do fêmur",
+            "Lesões ligamentares e meniscais do joelho",
+            "Fraturas do tornozelo e do pé",
+            "Fraturas da rótula, platotibial e da diáfise da perna",
+            "Luxações do joelho" // Nova categoria adicionada
+        ];
+
+        const bancoDeQuestoes = [
+            // --- Categoria 1: Clavícula e Escápula ---
+            {
+                categoria: categorias[0],
+                texto: "Um homem de 32 anos de idade dá entrada após sofrer queda de motocicleta. Apresenta deformidade com exposição óssea de 2 cm na região clavicular direita, parestesia no membro superior e perda de extensão do punho/dedos. A conduta imediata correta é:",
+                opcoes: ["Imobilização simples e alta com antibiótico oral.", "Redução fechada sob anestesia local e tipóia em oito.", "Lavagem abundante, antibioticoterapia venosa e cirurgia de urgência.", "Apenas analgesia, devido ao comprometimento do plexo braquial."],
+                correta: 2,
+                comentario: "Fraturas expostas são emergências. Exigem limpeza mecânico-cirúrgica, antibioticoterapia IV, profilaxia antitetânica e estabilização óssea rápida."
+            },
+            {
+                categoria: categorias[0],
+                texto: "Sobre as fraturas da escápula, qual a localização anatômica mais comumente fraturada e qual o mecanismo habitual?",
+                opcoes: ["O colo da escápula, por trauma direto de baixa energia.", "O corpo da escápula, devido a traumas contusos de alta energia.", "O acrômio, frequentemente por avulsão ligamentar isolada.", "A cavidade glenoide, acometida em luxações posteriores leves."],
+                correta: 1,
+                comentario: "A grande maioria das fraturas da escápula acomete o corpo e está associada a traumas de alta energia (ex: acidentes de moto), frequentemente com lesões associadas (costelas, pulmão)."
+            },
+            {
+                categoria: categorias[0],
+                texto: "Segundo a classificação de Allman para fraturas de clavícula, o grupo I corresponde às fraturas de qual região e qual é a sua incidência relativa?",
+                opcoes: ["Terço distal, sendo as mais raras (menos de 5%).", "Terço médio, correspondendo a aproximadamente 80% dos casos.", "Terço proximal (medial), representando 50% dos casos.", "Qualquer região exposta, incidência em torno de 20%."],
+                correta: 1,
+                comentario: "Na classificação de Allman, Grupo I = Terço Médio (80% a 85%); Grupo II = Terço Distal/Lateral (10% a 15%); Grupo III = Terço Proximal/Medial (cerca de 5%)."
+            },
+            {
+                categoria: categorias[0],
+                texto: "Qual dos seguintes achados constitui indicação absoluta (não relativa) para o tratamento cirúrgico de uma fratura fechada de clavícula?",
+                opcoes: ["Encurtamento do ombro de 1 cm.", "Presença de cominuição moderada.", "Lesão vascular associada comprovada (ex: artéria subclávia).", "Dor de forte intensidade nas primeiras 24 horas."],
+                correta: 2,
+                comentario: "Indicações absolutas: fratura exposta, lesão neurovascular progressiva ou confirmada, ombro flutuante e pele sob tensão extrema (risco de necrose)."
+            },
+            {
+                categoria: categorias[0],
+                texto: "Nas fraturas do terço distal da clavícula (Classificação de Neer), o tipo II caracteriza-se pela instabilidade devido a qual estrutura rompida?",
+                opcoes: ["Ligamento acromioclavicular.", "Ligamentos coracoclaviculares (conoide e trapezoide).", "Ligamento esternoclavicular.", "Tendão do músculo subclávio."],
+                correta: 1,
+                comentario: "No Neer Tipo II, a fratura ocorre medial aos ligamentos coracoclaviculares, que se encontram rompidos ou inseridos no fragmento distal, resultando em desvio superior do fragmento proximal."
+            },
+
+            // --- Categoria 2: Luxações glenoumerais ---
+            {
+                categoria: categorias[1],
+                texto: "A luxação gleno-umeral mais comum é a anterior. Qual é o mecanismo de trauma clássico que causa esta lesão?",
+                opcoes: ["Membro superior em abdução e rotação externa.", "Queda com o braço em adução cruzada.", "Impacto direto sobre o acrômio de cima para baixo.", "Braço em flexão anterior, adução e rotação interna."],
+                correta: 0,
+                comentario: "A luxação anterior (que perfaz ~95% dos casos) ocorre comumente através de força indireta com o membro superior em abdução e rotação externa."
+            },
+            {
+                categoria: categorias[1],
+                texto: "Um paciente com crise convulsiva prévia chega ao pronto-socorro referindo dor no ombro e limitação da rotação externa. A radiografia AP mostra o 'sinal da lâmpada' ou 'sinal do sorvete'. Qual o diagnóstico?",
+                opcoes: ["Luxação acromioclavicular.", "Luxação anterior do ombro.", "Luxação posterior do ombro.", "Fratura do colo cirúrgico do úmero."],
+                correta: 2,
+                comentario: "O histórico de choque elétrico ou convulsão, limitação da rotação externa e o aspecto arredondado da cabeça do úmero no RX AP ('lâmpada') são clássicos da luxação posterior."
+            },
+            {
+                categoria: categorias[1],
+                texto: "O que é a lesão de Bankart, frequentemente encontrada em pacientes com luxação anterior recidivante do ombro?",
+                opcoes: ["Fratura com afundamento da porção póstero-lateral da cabeça umeral.", "Ruptura do tendão da cabeça longa do bíceps.", "Avulsão do complexo labrum-cápsula da borda anteroinferior da glenoide.", "Fratura isolada do tubérculo maior."],
+                correta: 2,
+                comentario: "A lesão de Bankart é a desinserção do lábio (labrum) glenoidal anteroinferior, essencial na gênese da instabilidade anterior crônica."
+            },
+            {
+                categoria: categorias[1],
+                texto: "Durante o exame físico de uma luxação anterior aguda do ombro, é essencial testar a sensibilidade na face lateral do ombro. Qual nervo está sendo avaliado?",
+                opcoes: ["Nervo radial.", "Nervo axilar.", "Nervo musculocutâneo.", "Nervo mediano."],
+                correta: 1,
+                comentario: "O nervo axilar passa intimamente à articulação (quadrilátero de Velpeau) e é o nervo mais lesado nas luxações anteriores. A alteração sensitiva ocorre na pele da região deltoídea."
+            },
+            {
+                categoria: categorias[1],
+                texto: "Qual manobra de redução fechada para luxação anterior do ombro baseia-se em tração contínua e suave e não utiliza alavanca para evitar fraturas umerais?",
+                opcoes: ["Manobra de Kocher.", "Manobra de Stimson (ou técnica do peso pendente).", "Técnica de Hippocrates (pé na axila).", "Manobra de Milch modificada sem tração."],
+                correta: 1,
+                comentario: "A técnica de Stimson usa o peso do próprio membro pendente na maca com um pequeno peso extra. Evita alavancas perigosas, reduzindo risco de danos."
+            },
+
+            // --- Categoria 3: Fraturas de antebraço ---
+            {
+                categoria: categorias[2],
+                texto: "A fratura de Monteggia caracteriza-se por:",
+                opcoes: ["Fratura da diáfise da ulna com luxação da cabeça do rádio.", "Fratura da diáfise do rádio com luxação da articulação radioulnar distal.", "Fratura isolada do terço distal do rádio.", "Fratura de rádio e ulna com desvio volar e encurtamento."],
+                correta: 0,
+                comentario: "Monteggia: ulna fraturada (proximal) + rádio luxado (proximal). Mnemônico MUGR (Monteggia Ulna, Galeazzi Rádio)."
+            },
+            {
+                categoria: categorias[2],
+                texto: "Em adultos, o tratamento padrão-ouro para fraturas desviadas das diáfises do rádio e da ulna é:",
+                opcoes: ["Redução incruenta e gesso axilopalmar por 8 semanas.", "Haste intramedular flexível em ambos os ossos.", "Redução aberta anatômica e fixação interna com placas de compressão.", "Imobilização apenas com tipoia devido à baixa carga no membro."],
+                correta: 2,
+                comentario: "No adulto, a fratura do antebraço é considerada articular pois interfere na pronação/supinação, exigindo redução anatômica precisa e fixação rígida com placas e parafusos."
+            },
+            {
+                categoria: categorias[2],
+                texto: "Qual é a característica principal de uma fratura em 'Galho Verde' típica de pacientes pediátricos?",
+                opcoes: ["Fratura completa com grande cominuição óssea.", "Fratura na qual uma cortical quebra e a outra se dobra, mantendo a continuidade.", "Fratura que acomete exclusivamente a cartilagem de crescimento.", "Fratura exposta decorrente de torção extrema."],
+                correta: 1,
+                comentario: "Em crianças, o periósteo espesso e osso mais poroso permitem a deformação elástica e plástica. A fratura em galho verde tem uma cortical rompida e a oposta deformada."
+            },
+            {
+                categoria: categorias[2],
+                texto: "Identifique a fratura-luxação de Galeazzi:",
+                opcoes: ["Fratura da ulna proximal associada a luxação posterior do cotovelo.", "Fratura diafisária do rádio distal associada à luxação da articulação radioulnar distal.", "Avulsão do olécrano com deslocamento tricipital.", "Fratura cominutiva do carpo."],
+                correta: 1,
+                comentario: "Galeazzi envolve a fratura do terço distal do rádio junto com ruptura e luxação da articulação radioulnar distal (ARUD)."
+            },
+            {
+                categoria: categorias[2],
+                texto: "Na avaliação de sequelas de fraturas diafisárias do antebraço, a limitação de qual movimento indica má consolidação anatômica (ex: alteração do arco do rádio)?",
+                opcoes: ["Flexão e extensão do cotovelo.", "Desvio ulnar e radial isolados.", "Pronação e supinação do antebraço.", "Apenas supinação forçada do punho."],
+                correta: 2,
+                comentario: "A diáfise do rádio tem uma curvatura natural (arco) essencial para o movimento rotacional em torno da ulna. Sua perda resulta em déficit de pronação e supinação."
+            },
+
+            // --- Categoria 4: Fraturas e luxações dos carpos ---
+            {
+                categoria: categorias[3],
+                texto: "O osso escafoide possui uma peculiaridade anatômica que favorece complicações após a sua fratura. Marque a alternativa que descreve esse risco.",
+                opcoes: ["A vascularização é retrógrada, predispondo à necrose avascular do polo proximal.", "Possui alta taxa de vascularização colateral, dificultando consolidação rápida.", "É um osso exclusivamente fibroso, tendendo a frouxidão ligamentar.", "Sua proximidade ao nervo ulnar causa rotineiramente neuropatia motora."],
+                correta: 0,
+                comentario: "A principal artéria nutridora entra pelo polo distal do escafoide. Fraturas no terço médio ou proximal interrompem o sangue para o polo proximal, gerando alto risco de necrose avascular."
+            },
+            {
+                categoria: categorias[3],
+                texto: "A doença de Kienböck afeta primariamente qual osso do carpo?",
+                opcoes: ["Semilunar, causando osteonecrose.", "Escafoide, induzindo não-união.", "Hamato, com fratura do gancho.", "Pisiforme, gerando dor focal."],
+                correta: 0,
+                comentario: "A Doença de Kienböck é a necrose avascular idiopática do osso semilunar, comum em adultos jovens, que gera colapso e artrose progressiva do carpo."
+            },
+            {
+                categoria: categorias[3],
+                texto: "No trauma de punho com diagnóstico de Luxação Perilunar, qual o padrão de desvio dos ossos na radiografia de perfil?",
+                opcoes: ["O semilunar luxa-se volarmente fora de sua fossa radial.", "O semilunar permanece no rádio, e o capitato luxa-se para a região dorsal.", "O rádio luxa-se totalmente para a região palmar.", "Ocorre sobreposição unicamente do escafoide sobre o semilunar."],
+                correta: 1,
+                comentario: "Na luxação perilunar pura, o semilunar permanece alinhado com o rádio (dentro da fossa da glenoide radial), mas o carpo restante (representado pelo capitato) é deslocado dorsalmente."
+            },
+            {
+                categoria: categorias[3],
+                texto: "Ao segurar raquetes, tacos de golfe ou bastões, pacientes podem sofrer fratura por avulsão ou estresse de qual osso do carpo, evoluindo com parestesia ulnar?",
+                opcoes: ["Trapezoide.", "Capitato.", "Processo estiloide da ulna.", "Hâmulo (gancho) do hamato."],
+                correta: 3,
+                comentario: "A fratura do gancho do hamato é típica em esportes de empunhadura. A proximidade com o Canal de Guyon pode causar sintomas de compressão do nervo ulnar."
+            },
+            {
+                categoria: categorias[3],
+                texto: "Qual das seguintes afirmações sobre a anatomia cirúrgica e o diagnóstico das fraturas de escafoide é INCORRETA?",
+                opcoes: ["O acesso cirúrgico volar de Russe é evitado devido ao risco ao nervo mediano.", "A dor ocorre tipicamente na tabaqueira anatômica.", "A ressonância magnética pode revelar fraturas ocultas no RX normal.", "Gesso antebraquiopalmar incluindo o polegar é uma opção conservadora comum."],
+                correta: 0,
+                comentario: "O acesso volar de Russe é, na verdade, um dos acessos MAIS indicados para fraturas do terço médio/distal do escafoide, poupando a vascularização dorsal. A alternativa A é a incorreta."
+            },
+
+            // --- Categoria 5: Fraturas de coluna vertebral ---
+            {
+                categoria: categorias[4],
+                texto: "A fratura de Jefferson é classicamente descrita como:",
+                opcoes: ["Fratura-luxação da articulação C5-C6.", "Fratura isolada do dente do áxis (C2).", "Fratura explosiva do anel do atlas (C1).", "Fratura encunhamento osteoporótica em T12."],
+                correta: 2,
+                comentario: "Jefferson é a fratura em explosão dos arcos anterior e posterior do Atlas (C1), geralmente por mecanismo de carga axial pura na cabeça."
+            },
+            {
+                categoria: categorias[4],
+                texto: "Qual o achado que diferencia o Choque Neurogênico do Choque Hipovolêmico no trauma raquimedular?",
+                opcoes: ["No neurogênico observa-se taquicardia severa isolada.", "A pressão venosa central estará sempre elevada no neurogênico.", "Ocorre bradicardia (ou ausência de taquicardia compensatória) associada à hipotensão no neurogênico.", "O paciente neurogênico apresenta pele fria e pegajosa no corpo inteiro."],
+                correta: 2,
+                comentario: "No choque neurogênico, a perda do tônus simpático leva à vasodilatação (hipotensão com extremidades quentes e secas) e à incapacidade de fazer taquicardia compensatória (levando à bradicardia)."
+            },
+            {
+                categoria: categorias[4],
+                texto: "A fratura de Chance da coluna toracolombar é gerada principalmente por qual mecanismo de lesão?",
+                opcoes: ["Compressão axial por queda em pé.", "Hiperflexão sobre um fulcro, como o uso do cinto de segurança de dois pontos.", "Torção lateral grave.", "Extensão pura por chicote (whiplash)."],
+                correta: 1,
+                comentario: "A fratura de Chance acomete todas as colunas de Denis e é típica do mecanismo de distração-flexão ao redor de um eixo anterior (ex: cinto de colo automotivo)."
+            },
+            {
+                categoria: categorias[4],
+                texto: "De acordo com a teoria das 3 colunas de Denis, o que torna uma fratura da coluna toracolombar potencialmente instável biomecanicamente?",
+                opcoes: ["A lesão restrita à coluna anterior (encunhamento).", "A lesão simultânea de pelo menos duas colunas.", "Qualquer fratura isolada do processo espinhoso.", "Apenas o comprometimento neurológico prévio dita a instabilidade."],
+                correta: 1,
+                comentario: "Denis dividiu a coluna em anterior, média e posterior. A lesão de duas ou mais colunas (especialmente envolvendo a média) confere instabilidade mecânica aguda."
+            },
+            {
+                categoria: categorias[4],
+                texto: "Nas fraturas do processo odontoide (C2) de acordo com Anderson e D'Alonzo, qual tipo possui a maior taxa de não união (pseudoartrose)?",
+                opcoes: ["Tipo I (ponta do dente).", "Tipo II (base ou colo do dente).", "Tipo III (corpo do áxis).", "A taxa é idêntica nos três tipos."],
+                correta: 1,
+                comentario: "O Tipo II ocorre na base anatômica do dente onde a área de contato é menor e o suprimento sanguíneo pode ser precário, resultando nas maiores taxas de pseudoartrose."
+            },
+
+            // --- Categoria 6: Fraturas e luxação do quadril ---
+            {
+                categoria: categorias[5],
+                texto: "Na luxação posterior do quadril, qual é a atitude clássica em que o membro inferior do paciente se encontra no momento da avaliação?",
+                opcoes: ["Encurtado, abduzido e rodado externamente.", "Encurtado, aduzido e rodado internamente.", "Apenas abduzido e longo.", "Em extensão completa neutra e rígida."],
+                correta: 1,
+                comentario: "Atitude da luxação posterior: encurtamento, flexão, adução e rotação interna. A rotação externa é típica da fratura do colo femoral ou luxação anterior."
+            },
+            {
+                categoria: categorias[5],
+                texto: "Ao classificar as fraturas intracapsulares do colo do fêmur em adultos, a classificação de Gardner baseia-se primordialmente em:",
+                opcoes: ["Grau de cominuição posterior do colo.", "Ângulo do traço de fratura com a horizontal.", "Grau de desvio entre os fragmentos na radiografia.", "Presença de fragmento subtrocanteriano associado."],
+                correta: 2,
+                comentario: "Gardner avalia o grau de desvio. I (incompleta/impactada em valgo), II (completa sem desvio), III (completa, desvio parcial), IV (completa, desvio total)."
+            },
+            {
+                categoria: categorias[5],
+                texto: "Paciente masculino de 30 anos sofreu luxação posterior do quadril. Qual a principal e mais temida complicação TARDIA caso a redução não seja feita rapidamente (idealmente em menos de 6 horas)?",
+                opcoes: ["Necrose avascular da cabeça do fêmur.", "Lesão definitiva e imediata do nervo obturador.", "Síndrome compartimental da coxa.", "Miosite ossificante extensa dos glúteos."],
+                correta: 0,
+                comentario: "O tempo até a redução dita a sobrevida da cabeça femoral. Quanto mais tempo luxado, maior o sofrimento vascular retinacular, disparando a taxa de osteonecrose tardia."
+            },
+            {
+                categoria: categorias[5],
+                texto: "Em idosos frágeis acima de 80 anos com fratura do colo do fêmur tipo Gardner IV (totalmente desviada), a opção cirúrgica de escolha geralmente é:",
+                opcoes: ["Fixação percutânea com 3 parafusos canulados em todos os casos.", "Artroplastia parcial ou total de quadril.", "Repouso absoluto no leito até calo ósseo fibroso.", "Redução fechada e gesso pelvipodálico por 3 meses."],
+                correta: 1,
+                comentario: "Idosos frágeis têm baixo potencial de consolidação (risco de pseudoartrose/necrose é enorme no Gardner IV). A artroplastia permite alívio da dor e marcha imediata."
+            },
+            {
+                categoria: categorias[5],
+                texto: "A síndrome de colisão de 'dashboard' (painel do carro) com joelho fletido em 90 graus causa frequentemente qual padrão lesional no quadril?",
+                opcoes: ["Luxação anterior pura com distensão inguinal.", "Luxação posterior, com ou sem fratura da parede posterior do acetábulo.", "Fratura oblíqua exclusiva do colo femoral.", "Lesão do anel pélvico do tipo compressão lateral AP."],
+                correta: 1,
+                comentario: "O trauma axial aplicado na região anterior do joelho flexionado direciona o fêmur posteriormente para fora do acetábulo, causando luxação posterior e possível fratura do lábio posterior do acetábulo."
+            },
+
+            // --- Categoria 7: Fraturas do fêmur ---
+            {
+                categoria: categorias[6],
+                texto: "O padrão-ouro ouro mundial para o tratamento de fraturas diafisárias do fêmur em adultos, sem politraumatismo grave com indicação de damage control, é:",
+                opcoes: ["Uso contínuo de tração esquelética transfemoral.", "Fixador externo monoplanar prolongado.", "Haste intramedular bloqueada (fresada ou não).", "Placas em ponte usando acesso de grande amplitude lateral."],
+                correta: 2,
+                comentario: "A haste intramedular bloqueada anterógrada é o padrão-ouro biológico e mecânico para fêmur diafisário adulto. Permite alinhamento, carga progressiva e consolidação em altas taxas."
+            },
+            {
+                categoria: categorias[6],
+                texto: "Jovem vítima de acidente de carro tem fratura bilateral de fêmur. No segundo dia, apresenta confusão mental, petéquias torácicas, taquipneia e hipóxia. O quadro sugere fortemente:",
+                opcoes: ["Choque séptico agudo.", "Síndrome da Embolia Gordurosa (SEG).", "Pneumonia nosocomial fulminante.", "Reação anafilática severa a analgésicos."],
+                correta: 1,
+                comentario: "A tríade de hipóxia, confusão mental (neurológico) e petéquias no tórax/axilas após fraturas longas não estabilizadas é a marca clínica da Síndrome da Embolia Gordurosa."
+            },
+            {
+                categoria: categorias[6],
+                texto: "Por que se preconiza a estabilização cirúrgica precoce (dentro de 24 horas, sempre que possível) nas fraturas do fêmur em pacientes politraumatizados estabilizados?",
+                opcoes: ["Para diminuir o risco de SRDS (Síndrome do Desconforto Respiratório do Adulto) e facilitar a ventilação.", "Apenas para diminuir o tempo de internação, sem impacto na morbidade respiratória.", "Para garantir que o paciente não sinta dor nenhuma, evitando analgésicos fortes.", "Porque o osso do fêmur sofre necrose após 36 horas de fraturado."],
+                correta: 0,
+                comentario: "O controle de danos e a fixação precoce em trauma (Early Total Care) reduzem os fatores inflamatórios circulantes, minimizando a incidência de SDRA, embolia e pneumonia."
+            },
+            {
+                categoria: categorias[6],
+                texto: "Na fratura da região supracondilar do fêmur (fêmur distal), qual grupo muscular é o principal responsável por deslocar o fragmento distal em recurvatum (desvio posterior)?",
+                opcoes: ["Quadríceps femoral.", "Músculo gastrocnêmio (cabeças medial e lateral).", "Tendão patelar apenas.", "Músculo glúteo máximo."],
+                correta: 1,
+                comentario: "O gastrocnêmio insere-se nos côndilos posteriores do fêmur e exerce uma forte tração flexora e de rotação posterior no fragmento ósseo distal livre."
+            },
+            {
+                categoria: categorias[6],
+                texto: "Fraturas subtrocanterianas de fêmur apresentam desafios únicos de redução devido a forças deformantes. Qual a atitude típica do fragmento proximal (colo e cabeça)?",
+                opcoes: ["Fica parado em neutro, apenas o distal desvia.", "Abduzido, fletido e rodado internamente.", "Aduzido, em extensão e com rotação interna profunda.", "Fletido, abduzido e rodado externamente."],
+                correta: 3,
+                comentario: "O fragmento proximal sofre ação do iliopsoas (flexão), pequenos glúteos (abdução) e rotadores curtos externos. O fragmento assume atitude de flexão, abdução e rotação externa."
+            },
+
+            // --- Categoria 8: Lesões ligamentares do joelho ---
+            {
+                categoria: categorias[7],
+                texto: "A chamada 'Tríade Infeliz' ou Tríade de O'Donoghue do joelho consiste classicamente na lesão de quais estruturas?",
+                opcoes: ["LCA, menisco lateral e LCL.", "LCP, menisco medial e LCM.", "LCA, menisco medial e LCM.", "Apenas ligamentos cruzados (LCA e LCP) e cartilagem patelar."],
+                correta: 2,
+                comentario: "A tríade infeliz clássica de O'Donoghue (causada por valgo + rotação externa) é a rotura do Ligamento Cruzado Anterior, do Ligamento Colateral Medial e do Menisco Medial."
+            },
+            {
+                categoria: categorias[7],
+                texto: "Qual das seguintes regiões do menisco apresenta melhor potencial intrínseco de cicatrização após sutura, devido à sua vascularização?",
+                opcoes: ["Apenas as bordas livres radiais.", "Zona vermelha-vermelha (terço periférico).", "Zona branca-branca (terço central ou interno).", "Toda a superfície meniscal é ricamente vascularizada."],
+                correta: 1,
+                comentario: "Os meniscos recebem suprimento sanguíneo a partir da periferia capsular. A zona vermelha-vermelha (periférica, 3mm externos) cicatriza melhor. As zonas internas (brancas) são avasculares e nutridas por difusão."
+            },
+            {
+                categoria: categorias[7],
+                texto: "Qual é o teste manual considerado mais SENSÍVEL para o diagnóstico clínico agudo de ruptura do ligamento cruzado anterior (LCA)?",
+                opcoes: ["Teste da Gaveta Anterior a 90°.", "Teste de Lachman (a cerca de 20-30°).", "Teste de Apley Compressivo.", "Teste de McMurray."],
+                correta: 1,
+                comentario: "O teste de Lachman apresenta maior sensibilidade que a gaveta anterior, especialmente no trauma agudo, pois o joelho em pequena flexão (20-30º) neutraliza a força estabilizadora dos músculos isquiotibiais espasmados e dos meniscos."
+            },
+            {
+                categoria: categorias[7],
+                texto: "O sinal da 'gaveta posterior' no exame do joelho indica ruptura primária de qual estrutura?",
+                opcoes: ["Ligamento Colateral Lateral.", "Menisco Discoide.", "Canto posterolateral isolado.", "Ligamento Cruzado Posterior (LCP)."],
+                correta: 3,
+                comentario: "O deslocamento posterior excessivo da tíbia sobre o fêmur com joelho flexionado a 90 graus (gaveta posterior) confirma a incompetência do Ligamento Cruzado Posterior."
+            },
+            {
+                categoria: categorias[7],
+                texto: "Uma deformidade articular em valgo predispõe ao afrouxamento crônico ou lesão de qual estrutura medial do joelho?",
+                opcoes: ["Ligamento colateral lateral.", "Ligamento patelofemoral medial.", "Trato iliotibial.", "Ligamento colateral medial (LCM)."],
+                correta: 3,
+                comentario: "O valgo forçado abre a face medial do joelho, colocando em tensão (e risco de ruptura) o Ligamento Colateral Medial (LCM)."
+            },
+
+            // --- Categoria 9: Tornozelo e Pé ---
+            {
+                categoria: categorias[8],
+                texto: "A fratura de Jones refere-se classicamente a qual acometimento no pé?",
+                opcoes: ["Fratura avulsão no navicular.", "Fratura por avulsão do processo estiloide do 5º metatarso na inserção do fibular curto.", "Fratura da base do 5º metatarso no nível da articulação intermetatarsal (zona metafisária/diafisária).", "Luxação total das bases dos metatarsos."],
+                correta: 2,
+                comentario: "A verdadeira Fratura de Jones (Zonas de Lawrence e Botte 2) ocorre na junção metáfiso-diafisária do 5º metatarso, apresentando altos índices de pseudoartrose por baixa vascularização (diferente da fratura avulsão da tuberosidade - zona 1)."
+            },
+            {
+                categoria: categorias[8],
+                texto: "A lesão complexa que afeta os ligamentos tarsometatarsais associada frequentemente ao achatamento do arco plantar pós-trauma é a fratura/luxação de:",
+                opcoes: ["Lisfranc.", "Chopart.", "Jones.", "Tillaux."],
+                correta: 0,
+                comentario: "A articulação de Lisfranc compõe a junção tarsometatarsal do pé. Sua lesão causa instabilidade estrutural grave do arco plantar e frequentemente requer cirurgia rígida."
+            },
+            {
+                categoria: categorias[8],
+                texto: "De acordo com a classificação de Danis-Weber para fraturas de tornozelo, uma fratura transversa da fíbula localizada ABAIXO (distalmente) da sindesmose é tipo:",
+                opcoes: ["Weber A.", "Weber B.", "Weber C.", "Weber D."],
+                correta: 0,
+                comentario: "Weber A: Infrasindesmal. Weber B: Transindesmal (nível da articulação). Weber C: Suprasindesmal (acima da sindesmose, frequentemente rasgando-a)."
+            },
+            {
+                categoria: categorias[8],
+                texto: "Em suspeitas de fratura do calcâneo devido à queda de altura (carga axial), é prudente que o médico solicite, além do Rx do pé, radiografia de:",
+                opcoes: ["Membros superiores inteiros.", "Joelho homolateral, pela associação de luxação.", "Coluna vertebral lombar/toracolombar.", "Bacia exclusiva para avaliar disjunção púbica."],
+                correta: 2,
+                comentario: "Até 10 a 15% das fraturas do calcâneo por queda de altura estão associadas com fraturas em explosão ou compressão da coluna toracolombar, devido à dispersão da força axial. O Rx ou TC de coluna é mandatório."
+            },
+            {
+                categoria: categorias[8],
+                texto: "A Síndrome do Túnel do Tarso no tornozelo e pé consiste predominantemente na compressão de qual nervo?",
+                opcoes: ["Nervo sural superficial.", "Nervo fibular profundo.", "Nervo tibial posterior.", "Nervo safeno isolado."],
+                correta: 2,
+                comentario: "O túnel do tarso se localiza na região posteromedial do tornozelo, atrás do maléolo medial, por onde passa o feixe neurovascular, com compressão típica do nervo tibial posterior."
+            },
+
+            // --- Categoria 10: Rótula, Platô Tibial e Perna ---
+            {
+                categoria: categorias[9],
+                texto: "Um paciente em pós-operatório de osteossíntese de fratura fechada de tíbia inicia quadro de dor excruciante não responsiva a opioides na perna, pele tensa e dor severa à extensão passiva dos artelhos. Qual a complicação iminente?",
+                opcoes: ["Trombose venosa profunda incipiente.", "Infecção aguda da ferida (celulite).", "Síndrome compartimental aguda da perna.", "Ruptura exposta do cisto de Baker pós-traumático."],
+                correta: 2,
+                comentario: "A tríade de dor desproporcional resistente a medicamentos, tensão dolorosa à palpação do compartimento e dor ao alongamento passivo são os sinais clássicos e precoces de Síndrome Compartimental, exigindo fasciotomia de urgência."
+            },
+            {
+                categoria: categorias[9],
+                texto: "A classificação de Schatzker divide as fraturas do platô tibial em seis tipos. Os tipos I a III correspondem predominantemente ao acometimento de qual área?",
+                opcoes: ["Eminência intercondilar unicamente.", "Platô tibial medial apenas.", "Platô tibial lateral excluso.", "Os dois platôs simultaneamente (bicondilar)."],
+                correta: 2,
+                comentario: "Schatzker I (Cisalhamento lateral), II (Cisalhamento+afundamento lateral) e III (Afundamento lateral) são lesões limitadas ao planalto tibial externo (lateral)."
+            },
+            {
+                categoria: categorias[9],
+                texto: "O mecanismo da Fratura de Maisonneuve envolve torção do tornozelo. Essa fratura se define por:",
+                opcoes: ["Fratura da fíbula proximal associada à ruptura da sindesmose até o tornozelo.", "Fratura isolada dos maléolos medial e lateral.", "Avulsão do platô tibial anterolateral associada a rotura do LCA.", "Fratura transversal da diáfise tibial sem lesão fibular."],
+                correta: 0,
+                comentario: "Na fratura de Maisonneuve, uma força de rotação externa pura e intensa sobe ao longo da membrana interóssea e rompe-a inteiramente, resultando em luxação/alargamento do tornozelo e uma fratura alta da fíbula proximal."
+            },
+            {
+                categoria: categorias[9],
+                texto: "No tratamento de uma fratura exposta diafisária de tíbia Gustilo tipo IIIA (grande ferida, mas passível de cobertura óssea adequada sem retalhos), o método de estabilização óssea mais usual no adulto, desde que ferida limpa sem grande contaminação fecal/agrícola, pode ser:",
+                opcoes: ["Apenas imobilização com gesso cruropodálico de imediato.", "Placas e parafusos de compressão amplos e extensos.", "Haste intramedular bloqueada, frequentemente após cuidadoso desbridamento.", "Amputação rotineira para prevenir sépsis prolongada."],
+                correta: 2,
+                comentario: "Estudos demonstram que fraturas Gustilo I, II e até IIIA podem frequentemente ser tratadas com desbridamento vigoroso associado ao uso seguro de Hastes Intramedulares (preferencialmente não fresadas), garantindo estabilidade central precoce sem esvaziar mais as partes moles superficiais."
+            },
+            {
+                categoria: categorias[9],
+                texto: "Na fratura transversa desviada de patela com perda da extensão ativa do joelho, o conceito biomecânico clássico de fixação operatória que transforma forças distrativas do quadríceps em força de compressão na articulação é:",
+                opcoes: ["Uso isolado de parafusos corticais transversos.", "Placa em formato de rede (mesh plate).", "Princípio de Banda de Tensão (fios K + cerclagem em oito).", "Remoção total da patela e sutura simples do tendão."],
+                correta: 2,
+                comentario: "A técnica de banda de tensão (Tension Band Wiring) é o exemplo mais clássico de biomecânica, absorvendo a força que separaria os polos (ao fletir o joelho) e a convertendo em força que espreme as superfícies cartilaginosas juntas, permitindo mobilização precoce."
+            },
+
+            // --- Categoria 11: Luxação do Joelho ---
+            {
+                categoria: categorias[10],
+                texto: "A luxação femorotibial (luxação traumática aguda do joelho) difere criticamente da luxação da patela. Qual a conduta inicial emergencial MAIS crítica frente a um joelho luxado agudamente com perda de pulso distal?",
+                opcoes: ["Solicitação imediata de ressonância magnética dos ligamentos antes de qualquer manobra.", "Aguardar a avaliação final da equipe de cirurgia vascular antes de tocar no membro.", "Redução fechada imediata com tração, seguida de nova avaliação imediata dos pulsos e perfusão.", "Indicar fasciotomia profilática sem necessidade de redução óssea."],
+                correta: 2,
+                comentario: "A isquemia do membro por torção/tração da artéria poplítea deve ser aliviada o quanto antes pela redução ortopédica (realinhamento) imediata. Após a redução, o pulso é reavaliado e, se continuar ausente, indica-se investigação vascular (arteriografia ou cirurgia de emergência)."
+            },
+            {
+                categoria: categorias[10],
+                texto: "Qual estrutura nervosa está sob altíssimo risco de estiramento ou ruptura severa numa luxação do joelho, especialmente no padrão de luxação rotatória posterolateral?",
+                opcoes: ["Nervo femoral.", "Nervo isquiático alto.", "Nervo sural lateral.", "Nervo fibular comum."],
+                correta: 3,
+                comentario: "O nervo fibular comum contorna a cabeça da fíbula. Nos traumas graves do joelho, sobretudo aberturas em varo ou translações acentuadas, ele é estirado resultando em déficit motor (pé caído) e sensitivo no dorso do pé."
+            },
+            {
+                categoria: categorias[10],
+                texto: "Sobre o Índice Tornozelo-Braquial (ITB) avaliado rotineiramente nas vítimas de luxação do joelho (mesmo nas pós-reduzidas com pulsos palpáveis), quando um estudo vascular de imagem (como angiotomografia) se torna obrigatório?",
+                opcoes: ["Quando o ITB for exatamente 1.0", "Quando o ITB for estritamente superior a 1.2 indicando calcificação.", "Quando o ITB for inferior a 0.9 ou os pulsos forem assimétricos em relação ao lado são.", "Quando o membro contiver qualquer arranhão na pele anterior da tíbia."],
+                correta: 2,
+                comentario: "O ITB < 0.9 em membro traumatizado pós-luxação de joelho denota forte suspeita de lesão da íntima da artéria poplítea (trombose em evolução ou estiramento grave), tornando impositiva a avaliação de imagem (AngioTC ou Arteriografia) mesmo com pulso distal."
+            },
+            {
+                categoria: categorias[10],
+                texto: "Muitas luxações agudas traumáticas do joelho sofrem redução espontânea no local do acidente antes de chegarem ao hospital. Qual sintoma e/ou achado clínico imediato na admissão levanta a maior suspeita de que ocorreu esse evento de alta energia?",
+                opcoes: ["Apenas dor anterior à palpação da tuberosidade da tíbia.", "Derrame articular moderado puramente seroso com ligamentos totalmente tensos.", "Instabilidade grosseira multidirecional (ex: abertura para ambos varo/valgo e anteroposterior) e derrame difuso (hemartrose ou vazamento capsular).", "Bloqueio elástico isolado, típico de menisco em alça de balde sem dores extras."],
+                correta: 2,
+                comentario: "Para luxar o joelho, usualmente são rompidos múltiplos feixes estabilizadores centrais e periféricos (pelo menos 2 a 3 grandes complexos como LCA+LCP e cantos). O joelho se apresentará 'frouxo' em diversas direções."
+            },
+            {
+                categoria: categorias[10],
+                texto: "Durante a reconstrução cirúrgica multifásica crônica de um paciente com lesão ligamentar multiaxial pós-luxação (lesão de LCA, LCP, Canto Posterolateral e LCM), qual fator dita o pior prognóstico para o retorno pleno às atividades esportivas prévias?",
+                opcoes: ["Presença de lesão irreversível do nervo fibular comum.", "Ruptura associada de menisco sem instabilidade.", "O uso concomitante de enxertos autólogos (tendões flexores).", "A presença de derrame articular intermitente na fisioterapia."],
+                correta: 0,
+                comentario: "Enquanto as falhas ligamentares podem muitas vezes ser satisfatoriamente enxertadas, a paralisia perene do nervo fibular (pé em gota) dita limitação crônica, marchas escarvantes e alta dependência de órteses dinâmicas (AFOs), impactando irreversivelmente a biomecânica de corrida/salto."
+            }
+        ]; // Fim das 50 perguntas fixas do simulado.
+
+        let questoesAtuais = [];
+        let indiceAtual = 0;
+        let pontuacao = 0;
+        let desempenhoPorCategoria = {};
+
+        // Inicializa o state de categorias dinamicamente baseado no array central
+        categorias.forEach(cat => {
+            desempenhoPorCategoria[cat] = { total: 0, acertos: 0 };
+        });
+
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+        
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            html.classList.add('dark');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            html.classList.toggle('dark');
+        });
+
+        function hideAllScreens() {
+            document.getElementById('homeScreen').classList.add('hidden');
+            document.getElementById('categoryScreen').classList.add('hidden');
+            document.getElementById('quizScreen').classList.add('hidden');
+            document.getElementById('resultScreen').classList.add('hidden');
+        }
+
+        function showHome() {
+            hideAllScreens();
+            document.getElementById('homeScreen').classList.remove('hidden');
+        }
+
+        function showCategories() {
+            hideAllScreens();
+            const catList = document.getElementById('categoryList');
+            catList.innerHTML = '';
+            
+            categorias.forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = "bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-left p-4 rounded-xl shadow transition font-medium text-gray-800 dark:text-gray-200";
+                btn.innerText = cat;
+                const qtd = bancoDeQuestoes.filter(q => q.categoria === cat).length;
+                btn.innerHTML += `<span class="block text-sm text-gray-500 dark:text-gray-400 font-normal mt-1">${qtd} questões</span>`;
+                btn.onclick = () => startQuiz('category', cat);
+                catList.appendChild(btn);
+            });
+
+            document.getElementById('categoryScreen').classList.remove('hidden');
+        }
+
+        // Implementação estrita do algoritmo Fisher-Yates para não haver repetição
+        function embaralhar(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex !== 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                // Swap Elements
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function startQuiz(mode, category = null) {
+            pontuacao = 0;
+            indiceAtual = 0;
+            // Reset counters
+            categorias.forEach(cat => { desempenhoPorCategoria[cat] = { total: 0, acertos: 0 }; });
+
+            // CRÍTICO PARA O BUG: Criamos um clone raso das questões usando o Map/Spread antes de embaralhar.
+            if (mode === 'full') {
+                questoesAtuais = embaralhar([...bancoDeQuestoes]);
+            } else {
+                questoesAtuais = embaralhar(bancoDeQuestoes.filter(q => q.categoria === category));
+            }
+
+            if (questoesAtuais.length === 0) {
+                alert("Nenhuma questão encontrada para esta seleção.");
+                return showHome();
+            }
+
+            hideAllScreens();
+            document.getElementById('quizScreen').classList.remove('hidden');
+            renderizarQuestao();
+        }
+
+        let opcaoSelecionada = null;
+        let respondido = false;
+
+        function renderizarQuestao() {
+            respondido = false;
+            opcaoSelecionada = null;
+            
+            const questao = questoesAtuais[indiceAtual];
+            document.getElementById('questionCounter').innerText = `Questão ${indiceAtual + 1} de ${questoesAtuais.length}`;
+            document.getElementById('currentCategory').innerText = questao.categoria;
+            document.getElementById('questionText').innerText = questao.texto;
+            
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            desempenhoPorCategoria[questao.categoria].total++;
+
+            questao.opcoes.forEach((opcao, index) => {
+                const btn = document.createElement('button');
+                btn.className = "option-btn text-left p-4 rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-primary dark:hover:border-primary bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full";
+                btn.innerHTML = `<div class="flex items-start">
+                    <span class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center font-bold mr-3 mt-0.5">${String.fromCharCode(65 + index)}</span>
+                    <span class="mt-1">${opcao}</span>
+                </div>`;
+                btn.onclick = () => selecionarOpcao(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('btnConfirm').classList.remove('hidden');
+            document.getElementById('btnConfirm').disabled = true;
+            document.getElementById('btnNext').classList.add('hidden');
+            document.getElementById('feedbackContainer').classList.add('hidden');
+        }
+
+        function selecionarOpcao(index, btnElement) {
+            if (respondido) return;
+            opcaoSelecionada = index;
+            const botoes = document.querySelectorAll('.option-btn');
+            botoes.forEach(b => {
+                b.classList.remove('border-primary', 'bg-blue-50', 'dark:bg-blue-900/30');
+                b.classList.add('border-gray-200', 'dark:border-gray-600');
+            });
+            btnElement.classList.add('border-primary', 'bg-blue-50', 'dark:bg-blue-900/30');
+            btnElement.classList.remove('border-gray-200', 'dark:border-gray-600');
+            document.getElementById('btnConfirm').disabled = false;
+        }
+
+        function confirmAnswer() {
+            if (opcaoSelecionada === null || respondido) return;
+            respondido = true;
+
+            const questao = questoesAtuais[indiceAtual];
+            const botoes = document.querySelectorAll('.option-btn');
+            const feedbackContainer = document.getElementById('feedbackContainer');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackText = document.getElementById('feedbackText');
+
+            botoes.forEach(b => b.disabled = true);
+
+            if (opcaoSelecionada === questao.correta) {
+                pontuacao++;
+                desempenhoPorCategoria[questao.categoria].acertos++;
+                botoes[opcaoSelecionada].classList.add('border-success', 'bg-green-50', 'dark:bg-green-900/30', 'text-green-800', 'dark:text-green-200');
+                botoes[opcaoSelecionada].classList.remove('border-primary', 'bg-blue-50');
+                
+                feedbackContainer.classList.replace('border-l-4', 'border-success');
+                feedbackContainer.className = "bg-green-50 dark:bg-green-900/20 p-4 rounded-xl border-l-4 border-success mb-6 fade-in";
+                feedbackTitle.innerText = "Correto!";
+                feedbackTitle.className = "font-bold mb-2 text-success";
+            } else {
+                botoes[opcaoSelecionada].classList.add('border-danger', 'bg-red-50', 'dark:bg-red-900/30', 'text-red-800', 'dark:text-red-200');
+                botoes[questao.correta].classList.add('border-success', 'bg-green-50', 'dark:bg-green-900/30', 'text-green-800', 'dark:text-green-200'); 
+                
+                feedbackContainer.className = "bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border-l-4 border-danger mb-6 fade-in";
+                feedbackTitle.innerText = "Incorreto";
+                feedbackTitle.className = "font-bold mb-2 text-danger";
+            }
+
+            feedbackText.innerText = questao.comentario;
+            feedbackContainer.classList.remove('hidden');
+            document.getElementById('btnConfirm').classList.add('hidden');
+            
+            const btnNext = document.getElementById('btnNext');
+            btnNext.classList.remove('hidden');
+            if (indiceAtual === questoesAtuais.length - 1) {
+                btnNext.innerText = "Ver Resultados";
+                btnNext.classList.replace('bg-secondary', 'bg-primary');
+                btnNext.classList.replace('hover:bg-gray-600', 'hover:bg-blue-700');
+            } else {
+                btnNext.innerText = "Próxima";
+            }
+        }
+
+        function nextQuestion() {
+            indiceAtual++;
+            if (indiceAtual < questoesAtuais.length) {
+                renderizarQuestao();
+            } else {
+                mostrarResultados();
+            }
+        }
+
+        function mostrarResultados() {
+            hideAllScreens();
+            document.getElementById('resultScreen').classList.remove('hidden');
+            
+            const percGeral = Math.round((pontuacao / questoesAtuais.length) * 100);
+            const corNota = percGeral >= 70 ? 'text-success' : (percGeral >= 50 ? 'text-yellow-500' : 'text-danger');
+            
+            const finalScore = document.getElementById('finalScore');
+            finalScore.innerText = `${percGeral}%`;
+            finalScore.className = `text-6xl font-black mb-2 ${corNota}`;
+            
+            const breakdown = document.getElementById('performanceBreakdown');
+            breakdown.innerHTML = '';
+            const weakPointsList = document.getElementById('weakPointsList');
+            weakPointsList.innerHTML = '';
+            let hasWeakPoints = false;
+
+            for (const cat in desempenhoPorCategoria) {
+                const dados = desempenhoPorCategoria[cat];
+                if (dados.total > 0) {
+                    const percCat = Math.round((dados.acertos / dados.total) * 100);
+                    const corBarra = percCat >= 70 ? 'bg-success' : (percCat >= 60 ? 'bg-yellow-400' : 'bg-danger');
+                    
+                    breakdown.innerHTML += `
+                        <div class="mb-2">
+                            <div class="flex justify-between text-sm mb-1 text-gray-700 dark:text-gray-300">
+                                <span>${cat}</span>
+                                <span>${percCat}% (${dados.acertos}/${dados.total})</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                                <div class="${corBarra} h-2.5 rounded-full" style="width: ${percCat}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    if (percCat < 60) {
+                        hasWeakPoints = true;
+                        weakPointsList.innerHTML += `<li>${cat} - Desempenho de ${percCat}%. (Recomendada revisão do tema).</li>`;
+                    }
+                }
+            }
+
+            const weakContainer = document.getElementById('weakPointsContainer');
+            if (hasWeakPoints) { weakContainer.classList.remove('hidden'); } 
+            else { weakContainer.classList.add('hidden'); }
+        }
+
+        showHome();
+    </script>
+</body>
+</html>
